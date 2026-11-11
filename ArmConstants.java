@@ -1,30 +1,56 @@
 package frc.robot.subsystems.arm;
 
-import frc.lib.generic.hardware.motor.Motor;
-import frc.lib.generic.hardware.motor.MotorConfiguration;
-import frc.lib.generic.hardware.motor.MotorFactory;
-import frc.lib.generic.hardware.motor.MotorProperties;
+import edu.wpi.first.math.geometry.Rotation2d;
+import frc.lib.generic.hardware.motor.*;
 import frc.lib.generic.simulation.SimProperties;
+import frc.lib.generic.visualization.mechanisms.MechanismFactory;
+import frc.lib.generic.visualization.mechanisms.SingleJointedArmMechanism2d;
 
-import static edu.wpi.first.math.system.plant.DCMotor.getNeoVortex;
+import static edu.wpi.first.math.system.plant.DCMotor.getFalcon500;
 import static frc.lib.generic.simulation.SimProperties.SimulationType.SIMPLE_MOTOR;
 
 public class ArmConstants {
     protected static final Motor ARM_MOTOR = MotorFactory.createTalonFX("ARM_MOTOR", 2);
+    protected static final SingleJointedArmMechanism2d ARM_MECHANISM = MechanismFactory.createSingleJointedArmMechanism("Arm Mechanism", 2);
 
-    static {
-        configureArmMotor();
+    protected static final Rotation2d
+            MAX_ANGLE = Rotation2d.fromDegrees(270),
+            MIN_ANGLE = Rotation2d.fromDegrees(-270);
+
+    protected static final double MIN_ANGLE_ROT = MIN_ANGLE.getRotations();
+    protected static final double MAX_ANGLE_ROT = MAX_ANGLE.getRotations();
+
+    private static void configureTurretMotor() {
+        final MotorConfiguration configuration = new MotorConfiguration();
+
+        configuration.idleMode = MotorProperties.IdleMode.BRAKE;
+        configuration.inverted = true;
+
+        configuration.slot = new MotorProperties.Slot(34, 0, 0.18, 2.9749, 0, 0.22603);
+
+        configuration.profileMaxVelocity = 2;
+        configuration.profileMaxAcceleration = 3.0;
+
+        configuration.statorCurrentLimit = 40;
+        configuration.gearRatio = 23.8327;
+        configuration.closedLoopTolerance = 2;
+
+        configuration.forwardSoftLimit = MAX_ANGLE.getRotations();
+        configuration.reverseSoftLimit = MIN_ANGLE.getRotations();
+
+        configuration.simulationSlot = new MotorProperties.Slot(5, 0, 0.005, 11.22, 0, 0);
+        configuration.simulationProperties = new SimProperties.Slot(SIMPLE_MOTOR, getFalcon500(1), 100, 0.045);
+
+        ARM_MOTOR.configure(configuration);
+
+        ARM_MOTOR.setMotorEncoderPosition(0);
+
+        ARM_MOTOR.setupSignalUpdates(MotorSignal.CURRENT);
+        ARM_MOTOR.setupSignalUpdates(MotorSignal.POSITION);
+        ARM_MOTOR.setupSignalUpdates(MotorSignal.VELOCITY);
+        ARM_MOTOR.setupSignalUpdates(MotorSignal.VOLTAGE);
+        ARM_MOTOR.setupSignalUpdates(MotorSignal.ACCELERATION);
+        ARM_MOTOR.setupSignalUpdates(MotorSignal.CLOSED_LOOP_TARGET);
     }
 
-    private static void configureArmMotor() {
-        final MotorConfiguration config = new MotorConfiguration();
-
-        config.slot = new MotorProperties.Slot(1, 0, 0, 0, 0, 0);
-        config.idleMode = MotorProperties.IdleMode.COAST;
-
-        config.simulationSlot = new MotorProperties.Slot(1, 0, 0, 0, 0, 0);
-        config.simulationProperties = new SimProperties.Slot(SIMPLE_MOTOR, getNeoVortex(1), 0, 0);
-
-        ARM_MOTOR.configure(config);
-    }
 }
