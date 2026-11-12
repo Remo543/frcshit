@@ -1,34 +1,60 @@
 package frc.robot.subsystems.arm;
 
-import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
-import edu.wpi.first.wpilibj2.command.Command;
-import edu.wpi.first.wpilibj2.command.Commands;
-import frc.lib.generic.GenericSubsystem;
-import frc.lib.generic.hardware.motor.MotorProperties;
-import frc.robot.subsystems.arm.ArmConstants.*;
-import org.littletonrobotics.junction.Logger;
+import edu.wpi.first.math.system.plant.DCMotor;
+import frc.lib.generic.hardware.motor.*;
+import frc.lib.generic.simulation.SimProperties;
+import frc.lib.generic.visualization.mechanisms.MechanismFactory;
+import frc.lib.generic.visualization.mechanisms.SingleJointedArmMechanism2d;
 
-import java.util.ArrayList;
+import static edu.wpi.first.math.system.plant.DCMotor.getFalcon500;
+import static frc.lib.generic.simulation.SimProperties.SimulationType.SIMPLE_MOTOR;
 
-import static frc.robot.subsystems.arm.ArmConstants.ARM_MECHANISM;
-import static frc.robot.subsystems.arm.ArmConstants.ARM_MOTOR;
+public class ArmConstants {
+    protected static final Motor ARM_MOTOR = MotorFactory.createTalonFX("ARM_MOTOR", 2);
+    protected static final SingleJointedArmMechanism2d ARM_MECHANISM = MechanismFactory.createSingleJointedArmMechanism("Arm Mechanism", 2);
 
-public class Arm extends GenericSubsystem {
-    public Command setTargetPosition(double targetAngle){
-        return Commands.runOnce(() -> {
-            ARM_MOTOR.setOutput(MotorProperties.ControlMode.POSITION, targetAngle / 360);
-        });
+    protected static final Rotation2d
+            MAX_ANGLE = Rotation2d.fromDegrees(270),
+            MIN_ANGLE = Rotation2d.fromDegrees(-270);
+
+    protected static final double MIN_ANGLE_ROT = MIN_ANGLE.getRotations();
+    protected static final double MAX_ANGLE_ROT = MAX_ANGLE.getRotations();
+
+    static {
+        configureArmMotor();
     }
 
-    public void periodic() {
+    private static void configureArmMotor() {
+        final MotorConfiguration configuration = new MotorConfiguration();
 
-        ARM_MECHANISM.updateCurrentAngle(Rotation2d.fromDegrees(n));
-        ArrayList<Pose3d> a = ARM_MECHANISM.armMechanism.generate3dMechanism();
-        Pose3d[] poses = new Pose3d[a.size()];
-        for (int i = 0; i < a.size(); i++) {
-            poses[i] = a.get(i);
-        }
-        Logger.recordOutput("Example/MechanismPoses", poses);
+        configuration.idleMode = MotorProperties.IdleMode.BRAKE;
+
+
+        configuration.slot = new MotorProperties.Slot(34, 0, 0.18, 2.9749, 0, 0.22603);
+
+        configuration.simulationSlot = new MotorProperties.Slot(5, 0, 0.005, 11.22, 0, 0);
+        configuration.simulationProperties = new SimProperties.Slot (
+                SimProperties.SimulationType.ARM,
+                DCMotor.getFalcon500(1),
+                1,
+                0.5,
+                0.01,
+                Rotation2d.fromRotations(MIN_ANGLE.getRotations()),
+                Rotation2d.fromRotations(MAX_ANGLE.getRotations()),
+                true
+        );
+
+        ARM_MOTOR.configure(configuration);
+
+        ARM_MOTOR.setMotorEncoderPosition(0);
+
+        ARM_MOTOR.setupSignalUpdates(MotorSignal.CURRENT);
+        ARM_MOTOR.setupSignalUpdates(MotorSignal.POSITION);
+        ARM_MOTOR.setupSignalUpdates(MotorSignal.VELOCITY);
+        ARM_MOTOR.setupSignalUpdates(MotorSignal.VOLTAGE);
+        ARM_MOTOR.setupSignalUpdates(MotorSignal.ACCELERATION);
+        ARM_MOTOR.setupSignalUpdates(MotorSignal.CLOSED_LOOP_TARGET);
     }
+
 }
